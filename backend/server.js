@@ -10,6 +10,8 @@ app.use(express.json());
 mongoose.set("bufferCommands", false);
 
 const userRoutes = require('./routes/userRoutes');
+const studentRoutes = require("./routes/studentRoutes");
+app.use("/api/student", studentRoutes);
 app.use('/api/users', userRoutes);
 app.use((err, req, res, next) => {
   console.error("GLOBAL ERROR:", err); // stack trace complet

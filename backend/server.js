@@ -9,6 +9,10 @@ app.use(express.json());
 
 mongoose.set("bufferCommands", false);
 
+
+app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(express.json());
+
 const userRoutes = require('./routes/userRoutes');
 const studentRoutes = require("./routes/studentRoutes");
 app.use("/api/student", studentRoutes);

@@ -8,6 +8,7 @@ app.use(cors());
 app.use(express.json());
 
 mongoose.set("bufferCommands", false);
+const teacherRoutes = require('./routes/teacherRoutes');
 
 
 app.use(cors({ origin: "http://localhost:3000", credentials: true }));
@@ -17,6 +18,8 @@ const userRoutes = require('./routes/userRoutes');
 const studentRoutes = require("./routes/studentRoutes");
 app.use("/api/student", studentRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/teachers', teacherRoutes);
+app.get('/', (req, res) => res.send('Backend fonctionne !'));
 app.use((err, req, res, next) => {
   console.error("GLOBAL ERROR:", err); // stack trace complet
   res.status(500).json({ message: err.message || "Server error" });

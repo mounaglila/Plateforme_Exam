@@ -18,6 +18,7 @@ const getUsers = async (req, res) => {
 
 // Enregistrer un nouvel utilisateur
 const registerUser = async (req, res) => {
+    console.log("registerUser called");
     const { name, email, password, role } = req.body;
     try {
         const userExists = await User.findOne({ email });
@@ -30,9 +31,10 @@ const registerUser = async (req, res) => {
             email: user.email,
             token: generateToken(user._id)
         });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
+    }  catch (err) {
+  console.log("REGISTER ERROR =", err);   // <-- important
+  res.status(500).json({ message: err.message });
+}
 };
 
 // Authentifier un utilisateur (login)

@@ -1,0 +1,31 @@
+const mongoose = require("mongoose");
+
+const questionSchema = new mongoose.Schema(
+  {
+    type: { type: String, enum: ["mcq", "text"], required: true },
+    prompt: { type: String, required: true },
+    options: [{ type: String }],        // pour mcq
+    correctIndex: { type: Number },     // caché côté étudiant via select:false
+    points: { type: Number, default: 1 },
+  },
+  { _id: true }
+);
+
+const examSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },
+    description: { type: String, default: "" },
+    durationMinutes: { type: Number, default: 30 },
+    published: { type: Boolean, default: false },
+
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+
+    questions: [questionSchema],
+  },
+  { timestamps: true }
+);
+
+// Ne jamais envoyer la bonne réponse par défaut (sécurité)
+examSchema.path("questions.correctIndex").select(false);
+
+module.exports = mongoose.model("Exam", examSchema);

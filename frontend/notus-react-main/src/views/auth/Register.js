@@ -9,6 +9,7 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [role, setRole] = useState("student"); // default role
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -16,11 +17,12 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const data = await registerApi({ name, email, password });
+      const data = await registerApi({ name, email, password,role});
       localStorage.setItem("auth", JSON.stringify(data)); // token + user
 
-      // Par défaut il sera student → redirection student
-      history.push("/student/dashboard");
+      if (data.role === "admin") history.push("/admin/dashboard");
+      else if (data.role === "professor") history.push("/professor/dashboard");
+      else history.push("/student/dashboard");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -84,6 +86,21 @@ export default function Register() {
                       required
                     />
                   </div>
+                  <div className="relative w-full mb-3">
+  <label className="block uppercase text-blueGray-600 text-xs font-bold mb-2">
+    Role
+  </label>
+  <select
+    className="border-0 px-3 py-3 text-blueGray-600 bg-white rounded text-sm shadow focus:outline-none focus:ring w-full"
+    value={role}
+    onChange={(e) => setRole(e.target.value)}
+    required
+  >
+    <option value="student">Student</option>
+    <option value="professor">Professor</option>
+    <option value="admin">Admin</option>
+  </select>
+</div>
 
                   <div className="text-center mt-6">
                     <button

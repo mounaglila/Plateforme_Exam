@@ -12,11 +12,11 @@ export async function loginApi({ email, password }) {
   return data; // {_id,name,email,role,token}
 }
 
-export async function registerApi({ name, email, password }) {
+export async function registerApi({ name, email, password,role}) {
   const res = await fetch(`${API_BASE}/api/users/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify({ name, email, password,role }),
   });
 
   const data = await res.json();

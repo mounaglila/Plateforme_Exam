@@ -19,7 +19,7 @@ export default function Login() {
 
       // Stocker session
       localStorage.setItem("auth", JSON.stringify(data)); // contient token + role + user
-
+      console.log("LOGIN DATA:", data);
       // Redirection selon rôle
       if (data.role === "admin") history.push("/admin/dashboard");
       else if (data.role === "professor") history.push("/professor/dashboard");

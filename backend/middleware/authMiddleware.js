@@ -20,7 +20,7 @@ const professorOnly = (req, res, next) => {
 };
 
 const protect = async (req, res, next) => {
-    console.log("protect called");
+    
     let token;
 
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {

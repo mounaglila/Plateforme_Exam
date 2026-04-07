@@ -18,7 +18,8 @@ const userRoutes = require('./routes/userRoutes');
 const studentRoutes = require("./routes/studentRoutes");
 app.use("/api/student", studentRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/teachers', teacherRoutes);
+app.use('/api/professor', teacherRoutes);
+
 app.get('/', (req, res) => res.send('Backend fonctionne !'));
 app.use((err, req, res, next) => {
   console.error("GLOBAL ERROR:", err); // stack trace complet

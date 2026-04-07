@@ -17,6 +17,11 @@ const examSchema = new mongoose.Schema(
     description: { type: String, default: "" },
     durationMinutes: { type: Number, default: 30 },
     published: { type: Boolean, default: false },
+    // NEW: planning + rules
+    startAt: { type: Date, default: null },
+    endAt: { type: Date, default: null },
+    maxAttempts: { type: Number, default: 1, min: 1 },
+    showCorrection: { type: Boolean, default: false },
 
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 

@@ -34,21 +34,54 @@ exports.submitExam = async (req, res) => {
   const guard = ensureStudent(req, res);
   if (guard) return;
 
-  const { answers } = req.body;
+  const { answers, startedAt, timeSpentSec } = req.body;
+
   if (!Array.isArray(answers)) {
     return res.status(400).json({ message: "answers must be an array" });
   }
 
-  // Important: ici on a besoin des correctIndex pour corriger QCM
-  const exam = await Exam.findOne({ _id: req.params.examId, published: true }).select("+questions.correctIndex");
+  // On récupère les bonnes réponses pour corriger les MCQ
+  const exam = await Exam.findOne({ _id: req.params.examId, published: true }).select(
+    "+questions.correctIndex"
+  );
   if (!exam) return res.status(404).json({ message: "Exam not found" });
 
+  // 1) Contrôle fenêtre de passage
+  const now = new Date();
+  if (exam.startAt && now < exam.startAt) {
+    return res.status(400).json({ message: "Exam has not started yet" });
+  }
+  if (exam.endAt && now > exam.endAt) {
+    return res.status(400).json({ message: "Exam is closed" });
+  }
+
+  // 2) Contrôle nombre de tentatives
+  const attemptsCount = await Submission.countDocuments({
+    exam: exam._id,
+    student: req.user._id,
+  });
+
+  if (attemptsCount >= (exam.maxAttempts || 1)) {
+    return res.status(400).json({ message: "Maximum attempts reached" });
+  }
+
+  const attemptNumber = attemptsCount + 1;
+
+  // 3) Validation des questionId envoyés
+  const validQuestionIds = new Set(exam.questions.map((q) => String(q._id)));
+  for (const a of answers) {
+    if (!a.questionId || !validQuestionIds.has(String(a.questionId))) {
+      return res.status(400).json({ message: `Invalid questionId: ${a.questionId}` });
+    }
+  }
+
+  // 4) Auto-grading MCQ
   let score = 0;
   let maxScore = 0;
 
-  // Auto-grade seulement les MCQ
   for (const q of exam.questions) {
     maxScore += q.points || 1;
+
     if (q.type !== "mcq") continue;
 
     const a = answers.find((x) => String(x.questionId) === String(q._id));
@@ -66,6 +99,10 @@ exports.submitExam = async (req, res) => {
     status: "submitted",
     score,
     maxScore,
+    attemptNumber,
+    startedAt: startedAt ? new Date(startedAt) : null,
+    submittedAt: new Date(),
+    timeSpentSec: Number(timeSpentSec || 0),
   });
 
   res.status(201).json(submission);

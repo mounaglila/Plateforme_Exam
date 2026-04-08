@@ -1,5 +1,11 @@
 const Exam = require("../models/Exam");
 const Submission = require("../models/Submission");
+const { logAudit } = require("../utils/audit");
+
+const studentVisibleExamFilter = {
+  published: true,
+  $or: [{ adminApproved: true }, { adminApproved: { $exists: false } }],
+};
 
 function ensureStudent(req, res) {
   if (!req.user) return res.status(401).json({ message: "Not authorized" });
@@ -11,8 +17,8 @@ exports.listPublishedExams = async (req, res) => {
   const guard = ensureStudent(req, res);
   if (guard) return;
 
-  const exams = await Exam.find({ published: true })
-    .select("title description durationMinutes createdAt")
+  const exams = await Exam.find(studentVisibleExamFilter)
+    .select("title description durationMinutes createdAt maxAttempts")
     .sort({ createdAt: -1 });
 
   res.json(exams);
@@ -22,7 +28,7 @@ exports.getExamForStudent = async (req, res) => {
   const guard = ensureStudent(req, res);
   if (guard) return;
 
-  const exam = await Exam.findOne({ _id: req.params.examId, published: true })
+  const exam = await Exam.findOne({ _id: req.params.examId, ...studentVisibleExamFilter })
     .select("title description durationMinutes questions"); // correctIndex est select:false
 
   if (!exam) return res.status(404).json({ message: "Exam not found" });
@@ -41,7 +47,7 @@ exports.submitExam = async (req, res) => {
   }
 
   // On récupère les bonnes réponses pour corriger les MCQ
-  const exam = await Exam.findOne({ _id: req.params.examId, published: true }).select(
+  const exam = await Exam.findOne({ _id: req.params.examId, ...studentVisibleExamFilter }).select(
     "+questions.correctIndex"
   );
   if (!exam) return res.status(404).json({ message: "Exam not found" });
@@ -103,6 +109,15 @@ exports.submitExam = async (req, res) => {
     startedAt: startedAt ? new Date(startedAt) : null,
     submittedAt: new Date(),
     timeSpentSec: Number(timeSpentSec || 0),
+  });
+
+  await logAudit({
+    actor: req.user,
+    action: "exam.submit",
+    entityType: "submission",
+    entityId: submission._id,
+    meta: { examId: String(exam._id), score, maxScore, attemptNumber },
+    req,
   });
 
   res.status(201).json(submission);

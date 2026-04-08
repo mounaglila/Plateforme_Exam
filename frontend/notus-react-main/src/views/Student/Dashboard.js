@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getPublishedExams, getMySubmissions } from "../../api/student";
+import { getStoredAuth } from "../../api/auth";
+import { getMyAnnouncements } from "../../api/announcements";
 
 export default function StudentDashboard() {
   const [exams, setExams] = useState([]);
@@ -8,17 +10,22 @@ export default function StudentDashboard() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [announcements, setAnnouncements] = useState([]);
+  const authUser = getStoredAuth().user || {};
+  const displayName = authUser.name || authUser.email || "Étudiant";
 
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
-        const [examsData, subsData] = await Promise.all([
+        const [examsData, subsData, ann] = await Promise.all([
           getPublishedExams(),
           getMySubmissions(),
+          getMyAnnouncements().catch(() => []),
         ]);
         setExams(Array.isArray(examsData) ? examsData : []);
         setSubs(Array.isArray(subsData) ? subsData : []);
+        setAnnouncements(Array.isArray(ann) ? ann : []);
       } catch (e) {
         setError(e.message || "Erreur de chargement");
       } finally {
@@ -167,9 +174,16 @@ export default function StudentDashboard() {
           </nav>
 
           <div className="sd-profile-zone">
-            <div className="sd-avatar">JD</div>
+            <div className="sd-avatar">
+              {(displayName || "E")
+                .split(/\s+/)
+                .map((w) => w[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase()}
+            </div>
             <div>
-              <p style={{fontSize:14, fontWeight:700, color:'var(--text-main)'}}>John Doe</p>
+              <p style={{fontSize:14, fontWeight:700, color:'var(--text-main)'}}>{displayName}</p>
               <p style={{fontSize:12, color:'var(--text-muted)'}}>Étudiant</p>
             </div>
           </div>
@@ -177,6 +191,11 @@ export default function StudentDashboard() {
 
         {/* MAIN CONTENT */}
         <main className="sd-main">
+          {error && (
+            <p className="text-red-600 mb-4" role="alert">
+              {error}
+            </p>
+          )}
           {/* TOPBAR */}
           <div className="sd-topbar">
             <div className="sd-search-wrapper">
@@ -198,8 +217,30 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          <h1 className="sd-title">Bienvenue, John 👋</h1>
+          <h1 className="sd-title">Bienvenue, {displayName.split(" ")[0] || "étudiant"} 👋</h1>
           <p className="sd-subtitle" style={{marginBottom:30}}>Voici ce qui se passe dans vos cours aujourd'hui.</p>
+
+          {announcements.length > 0 && (
+            <div style={{ marginBottom: 28 }}>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 18, marginBottom: 12 }}>Annonces</h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {announcements.slice(0, 5).map((a) => (
+                  <div
+                    key={a._id}
+                    style={{
+                      background: "white",
+                      borderRadius: 16,
+                      padding: 16,
+                      border: "1px solid var(--border)",
+                    }}
+                  >
+                    <p style={{ fontWeight: 700, margin: "0 0 6px" }}>{a.title}</p>
+                    <p style={{ margin: 0, fontSize: 14, color: "var(--text-muted)", whiteSpace: "pre-wrap" }}>{a.body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* STATS */}
           <div className="sd-stats-row">

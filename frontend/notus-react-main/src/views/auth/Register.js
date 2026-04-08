@@ -409,15 +409,6 @@ const ROLES = [
       </svg>
     ),
   },
-  {
-    value: "admin",
-    label: "Admin",
-    icon: (
-      <svg viewBox="0 0 24 24">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-      </svg>
-    ),
-  },
 ];
 
 export default function Register() {
@@ -435,9 +426,29 @@ export default function Register() {
     setLoading(true);
     try {
       const data = await registerApi({ name, email, password, role });
-      localStorage.setItem("auth", JSON.stringify(data));
-      history.push("/login");
- ;
+      if (data.token) {
+        localStorage.setItem(
+          "auth",
+          JSON.stringify({
+            token: data.token,
+            user: {
+              _id: data._id,
+              name: data.name,
+              email: data.email,
+              role: data.role,
+              enrollmentStatus: data.enrollmentStatus,
+            },
+          })
+        );
+        if (data.role === "professor") history.push("/professor/dashboard");
+        else history.push("/student/dashboard");
+      } else {
+        history.push("/auth/login", {
+          registrationPending: true,
+          message:
+            "Votre compte étudiant a été créé. Un administrateur doit approuver votre inscription avant que vous puissiez vous connecter.",
+        });
+      }
     } catch (err) {
       setError(err.message);
     } finally {

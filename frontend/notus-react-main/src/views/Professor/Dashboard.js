@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getMyProfessorExams, publishProfessorExam } from "../../api/professor";
+import { getStoredAuth } from "../../api/auth";
+import { getMyAnnouncements } from "../../api/announcements";
 
 /* ─── Utilitaire de date ─── */
 const fmt = (d) =>
@@ -12,6 +14,9 @@ export default function ProfessorDashboard() {
   const [loading, setLoading] = useState(true);
   const [publishingId, setPublishingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [announcements, setAnnouncements] = useState([]);
+  const authUser = getStoredAuth().user || {};
+  const displayName = authUser.name || authUser.email || "Enseignant";
 
   const load = async () => {
     try {
@@ -26,7 +31,17 @@ export default function ProfessorDashboard() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    (async () => {
+      try {
+        const ann = await getMyAnnouncements();
+        setAnnouncements(Array.isArray(ann) ? ann : []);
+      } catch {
+        setAnnouncements([]);
+      }
+    })();
+  }, []);
 
   const filteredExams = useMemo(() => {
     return exams.filter(ex => ex.title.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -35,7 +50,8 @@ export default function ProfessorDashboard() {
   const stats = useMemo(() => {
     const total = exams.length;
     const published = exams.filter((e) => e.published).length;
-    return { total, published, drafts: total - published };
+    const pendingAdmin = exams.filter((e) => e.published && e.adminApproved === false).length;
+    return { total, published, drafts: total - published, pendingAdmin };
   }, [exams]);
 
   const onPublish = async (id) => {
@@ -197,9 +213,16 @@ export default function ProfessorDashboard() {
           </nav>
 
           <div className="pd-profile-zone">
-            <div className="pd-avatar">DR</div>
+            <div className="pd-avatar">
+              {(displayName || "P")
+                .split(/\s+/)
+                .map((w) => w[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase()}
+            </div>
             <div>
-              <p style={{fontSize:14, fontWeight:700, color:'var(--text-main)'}}>Dr. Smith</p>
+              <p style={{fontSize:14, fontWeight:700, color:'var(--text-main)'}}>{displayName}</p>
               <p style={{fontSize:12, color:'var(--text-muted)'}}>Enseignant</p>
             </div>
           </div>
@@ -207,6 +230,11 @@ export default function ProfessorDashboard() {
 
         {/* MAIN CONTENT */}
         <main className="pd-main">
+          {error && (
+            <p style={{ color: "#dc2626", marginBottom: 16 }} role="alert">
+              {error}
+            </p>
+          )}
           {/* TOPBAR */}
           <div className="pd-topbar">
             <div className="pd-search-wrapper">
@@ -230,8 +258,30 @@ export default function ProfessorDashboard() {
           <h1 style={{fontFamily:'var(--font-display)', fontSize:32, color:'var(--text-main)', marginBottom:10}}>Dashboard Enseignant</h1>
           <p style={{color:'var(--text-muted)', marginBottom:35}}>Gérez vos évaluations et suivez la progression de vos étudiants.</p>
 
+          {announcements.length > 0 && (
+            <div style={{ marginBottom: 28 }}>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 18, marginBottom: 12 }}>Annonces</h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {announcements.slice(0, 5).map((a) => (
+                  <div
+                    key={a._id}
+                    style={{
+                      background: "white",
+                      borderRadius: 16,
+                      padding: 16,
+                      border: "1px solid var(--border)",
+                    }}
+                  >
+                    <p style={{ fontWeight: 700, margin: "0 0 6px" }}>{a.title}</p>
+                    <p style={{ margin: 0, fontSize: 14, color: "var(--text-muted)", whiteSpace: "pre-wrap" }}>{a.body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* STATS */}
-          <div className="pd-stats-row">
+          <div className="pd-stats-row" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}>
             <div className="pd-stat-card">
               <p style={{fontSize:12, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase'}}>Total Examens</p>
               <p className="pd-stat-val" style={{color:'var(--text-main)'}}>{stats.total}</p>
@@ -244,6 +294,10 @@ export default function ProfessorDashboard() {
               <p style={{fontSize:12, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase'}}>Brouillons</p>
               <p className="pd-stat-val" style={{color:'var(--warning)'}}>{stats.drafts}</p>
             </div>
+            <div className="pd-stat-card">
+              <p style={{fontSize:12, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase'}}>Attente admin</p>
+              <p className="pd-stat-val" style={{color:'var(--secondary)'}}>{stats.pendingAdmin}</p>
+            </div>
           </div>
 
           {/* EXAM GRID */}
@@ -252,9 +306,14 @@ export default function ProfessorDashboard() {
             {loading ? [1,2].map(i => <div key={i} className="pd-skeleton"/>) :
              filteredExams.map(ex => (
               <div key={ex._id} className="pd-card">
-                <span className={`pd-badge ${ex.published ? 'pd-badge--pub' : 'pd-badge--draft'}`}>
-                  {ex.published ? '● Publié' : '● Brouillon'}
-                </span>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+                  <span className={`pd-badge ${ex.published ? 'pd-badge--pub' : 'pd-badge--draft'}`}>
+                    {ex.published ? '● Publié' : '● Brouillon'}
+                  </span>
+                  {ex.published && ex.adminApproved === false && (
+                    <span className="pd-badge pd-badge--draft">● En attente validation admin</span>
+                  )}
+                </div>
                 
                 <h3 style={{fontSize:19, fontWeight:700, marginBottom:8}}>{ex.title}</h3>
                 <p style={{fontSize:14, color:'var(--text-muted)', marginBottom:20, flexGrow:1}}>

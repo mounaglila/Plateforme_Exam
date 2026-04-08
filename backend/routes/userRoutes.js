@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getUsers, registerUser, authUser } = require('../controllers/UserController');
+const { getUsers, registerUser, authUser, getAnnouncementsForUser } = require('../controllers/UserController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 
 // Récupérer tous les utilisateurs (GET)
@@ -11,5 +11,7 @@ router.post('/register',registerUser);
 
 // Login (POST)
 router.post('/login', authUser);
+
+router.get("/announcements", protect, getAnnouncementsForUser);
 
 module.exports = router;

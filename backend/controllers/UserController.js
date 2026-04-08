@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const { logAudit } = require("../utils/audit");
 
 // Générer un token JWT
 const generateToken = (id) => {
@@ -16,27 +17,43 @@ const getUsers = async (req, res) => {
     }
 };
 
-// Enregistrer un nouvel utilisateur
+// Enregistrer un nouvel utilisateur (admin ne peut pas s'inscrire ici)
 const registerUser = async (req, res) => {
-    console.log("registerUser called");
     const { name, email, password, role } = req.body;
     try {
+        if (role === "admin") {
+            return res.status(403).json({ message: "Admin accounts cannot be created via public registration" });
+        }
         const userExists = await User.findOne({ email });
         if (userExists) return res.status(400).json({ message: 'User already exists' });
-        
-        const user = await User.create({ name, email, password, role });
-        res.status(201).json({
+
+        const enrollmentStatus = role === "student" ? "pending" : "active";
+
+        const user = await User.create({ name, email, password, role, enrollmentStatus });
+
+        const payload = {
             _id: user._id,
             name: user.name,
             email: user.email,
-            role: user.role, 
-            token: generateToken(user._id)
+            role: user.role,
+            enrollmentStatus: user.enrollmentStatus,
+        };
+        if (enrollmentStatus !== "pending") {
+            payload.token = generateToken(user._id);
+        }
+        await logAudit({
+            actor: null,
+            actorEmail: user.email,
+            action: "auth.register",
+            entityType: "user",
+            entityId: user._id,
+            meta: { role: user.role, enrollmentStatus },
+            req,
         });
-        console.log("REGISTER BODY =", req.body);
-    }  catch (err) {
-  console.log("REGISTER ERROR =", err);   // <-- important
-  res.status(500).json({ message: err.message });
-}
+        res.status(201).json(payload);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 };
 
 // Authentifier un utilisateur (login)
@@ -45,12 +62,30 @@ const authUser = async (req, res) => {
     try {
         const user = await User.findOne({ email });
         if (user && (await user.matchPassword(password))) {
+            const enrollmentStatus = user.enrollmentStatus || "active";
+            if (user.role === "student" && enrollmentStatus === "pending") {
+                return res.status(403).json({
+                    message: "Your account is pending administrator approval. You cannot sign in yet.",
+                });
+            }
+            if (enrollmentStatus === "suspended") {
+                return res.status(403).json({ message: "Your account has been suspended." });
+            }
+            await logAudit({
+                actor: user,
+                action: "auth.login",
+                entityType: "user",
+                entityId: user._id,
+                meta: {},
+                req,
+            });
             res.json({
                 _id: user._id,
                 name: user.name,
                 email: user.email,
                 role: user.role,
-                token: generateToken(user._id)
+                enrollmentStatus,
+                token: generateToken(user._id),
             });
         } else {
             res.status(401).json({ message: 'Invalid email or password' });
@@ -60,4 +95,26 @@ const authUser = async (req, res) => {
     }
 };
 
-module.exports = { getUsers, registerUser, authUser };
+const getAnnouncementsForUser = async (req, res) => {
+    try {
+        const Announcement = require("../models/Announcement");
+        const role = req.user.role;
+        const aud =
+            role === "student"
+                ? ["all", "students"]
+                : role === "professor"
+                  ? ["all", "professors"]
+                  : ["all", "students", "professors"];
+
+        const list = await Announcement.find({ audience: { $in: aud } })
+            .sort({ createdAt: -1 })
+            .limit(50)
+            .select("title body audience createdAt");
+
+        res.json(list);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+module.exports = { getUsers, registerUser, authUser, getAnnouncementsForUser };

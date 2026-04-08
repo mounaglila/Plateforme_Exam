@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link, useHistory } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useHistory, useLocation } from "react-router-dom";
 import { loginApi } from "../../api/auth";
 
 const styles = `
@@ -296,10 +296,21 @@ const styles = `
 
 export default function Login() {
   const history = useHistory();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [info, setInfo] = useState("");
+
+  useEffect(() => {
+    const msg = location.state?.message;
+    if (msg) setInfo(msg);
+    if (location.state?.registrationPending) {
+      history.replace({ pathname: "/auth/login", state: {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -307,7 +318,19 @@ export default function Login() {
     setLoading(true);
     try {
       const data = await loginApi({ email, password });
-      localStorage.setItem("auth", JSON.stringify({ token: data.token, user: data }));
+      localStorage.setItem(
+        "auth",
+        JSON.stringify({
+          token: data.token,
+          user: {
+            _id: data._id,
+            name: data.name,
+            email: data.email,
+            role: data.role,
+            enrollmentStatus: data.enrollmentStatus,
+          },
+        })
+      );
       if (data.role === "admin") history.push("/admin/dashboard");
       else if (data.role === "professor") history.push("/professor/dashboard");
       else history.push("/student/dashboard");
@@ -363,6 +386,12 @@ export default function Login() {
             <span className="divider-text">credentials</span>
             <div className="divider-line" />
           </div>
+
+          {info && (
+            <div className="error-box" style={{ borderColor: "#86efac", background: "rgba(134,239,172,0.15)" }}>
+              <span style={{ color: "#166534" }}>{info}</span>
+            </div>
+          )}
 
           {error && (
             <div className="error-box">

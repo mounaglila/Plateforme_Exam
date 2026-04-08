@@ -1,5 +1,6 @@
 const Exam = require("../models/Exam");
 const Submission = require("../models/Submission");
+const { logAudit } = require("../utils/audit");
 
 function ensureProfessor(req, res) {
   if (!req.user) return res.status(401).json({ message: "Not authorized" });
@@ -35,6 +36,15 @@ exports.createExam = async (req, res) => {
     endAt: endAt ? new Date(endAt) : null,
     maxAttempts: Number(maxAttempts) > 0 ? Number(maxAttempts) : 1,
     showCorrection: Boolean(showCorrection),
+  });
+
+  await logAudit({
+    actor: req.user,
+    action: "exam.create",
+    entityType: "exam",
+    entityId: exam._id,
+    meta: { title: exam.title },
+    req,
   });
 
   res.status(201).json(exam);
@@ -79,6 +89,16 @@ exports.updateExam = async (req, res) => {
   if (questions !== undefined && Array.isArray(questions)) exam.questions = questions;
 
   await exam.save();
+
+  await logAudit({
+    actor: req.user,
+    action: "exam.update",
+    entityType: "exam",
+    entityId: exam._id,
+    meta: { title: exam.title },
+    req,
+  });
+
   res.json(exam);
 };
 
@@ -91,9 +111,24 @@ exports.publishExam = async (req, res) => {
   if (!exam) return res.status(404).json({ message: "Exam not found" });
 
   exam.published = true;
+  exam.adminApproved = false;
   await exam.save();
 
-  res.json({ message: "Exam published", examId: exam._id, published: exam.published });
+  await logAudit({
+    actor: req.user,
+    action: "exam.publish",
+    entityType: "exam",
+    entityId: exam._id,
+    meta: { title: exam.title, adminApproved: false },
+    req,
+  });
+
+  res.json({
+    message: "Exam published; awaiting admin approval before students can see it",
+    examId: exam._id,
+    published: exam.published,
+    adminApproved: exam.adminApproved,
+  });
 };
 
 // GET /api/professor/exams/:examId/submissions

@@ -17,6 +17,8 @@ const examSchema = new mongoose.Schema(
     description: { type: String, default: "" },
     durationMinutes: { type: Number, default: 30 },
     published: { type: Boolean, default: false },
+    /** After professor publishes, false until an admin approves (students only see approved exams). */
+    adminApproved: { type: Boolean, default: true },
     // NEW: planning + rules
     startAt: { type: Date, default: null },
     endAt: { type: Date, default: null },

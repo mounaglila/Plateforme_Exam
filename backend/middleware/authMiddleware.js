@@ -4,39 +4,45 @@ const User = require('../models/User');
 // Vérifie si l'utilisateur est admin
 const adminOnly = (req, res, next) => {
     if (req.user && req.user.role === 'admin') {
-        next();
-    } else {
-        res.status(403).json({ message: 'Access denied: Admins only' });
+        return next();
     }
+    return res.status(403).json({ message: 'Access denied: Admins only' });
 };
 
-// Vérifie si l'utilisateur est professeur
+// Professeur ou admin (même accès API professeur)
 const professorOnly = (req, res, next) => {
-    if (req.user && req.user.role === 'professor') {
-        next();
-    } else {
-        res.status(403).json({ message: 'Access denied: Professors only' });
+    if (req.user && (req.user.role === 'professor' || req.user.role === 'admin')) {
+        return next();
     }
+    return res.status(403).json({ message: 'Access denied: Professors only' });
 };
 
 const protect = async (req, res, next) => {
-    
-    let token;
-
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-        try {
-            token = req.headers.authorization.split(' ')[1];
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            req.user = await User.findById(decoded.id).select('-password');
-            next();
-        } catch (err) {
-            console.log("Token verification error:", err);
-            res.status(401).json({ message: 'Not authorized, token failed' });
-        }
+    const header = req.headers.authorization;
+    if (!header || !header.startsWith("Bearer")) {
+        return res.status(401).json({ message: "Not authorized, no token" });
     }
 
+    const token = header.split(" ")[1];
     if (!token) {
-        res.status(401).json({ message: 'Not authorized, no token' });
+        return res.status(401).json({ message: "Not authorized, no token" });
+    }
+
+    try {
+        if (!process.env.JWT_SECRET) {
+            console.error("JWT_SECRET is not set in .env");
+            return res.status(500).json({ message: "Server misconfiguration: JWT_SECRET missing" });
+        }
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id).select("-password");
+        if (!user) {
+            return res.status(401).json({ message: "Not authorized, user not found" });
+        }
+        req.user = user;
+        return next();
+    } catch (err) {
+        console.log("Token verification error:", err.message);
+        return res.status(401).json({ message: "Not authorized, token failed" });
     }
 };
 

@@ -4,21 +4,36 @@ const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
-app.use(cors());
+
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "http://localhost:3001",
+  "http://127.0.0.1:3001",
+];
+app.use(
+  cors({
+    origin(origin, cb) {
+      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+      cb(null, false);
+    },
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  })
+);
 app.use(express.json());
 
 mongoose.set("bufferCommands", false);
 const teacherRoutes = require('./routes/teacherRoutes');
 
-
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
-app.use(express.json());
-
 const userRoutes = require('./routes/userRoutes');
 const studentRoutes = require("./routes/studentRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 app.use("/api/student", studentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/professor', teacherRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get('/', (req, res) => res.send('Backend fonctionne !'));
 app.use((err, req, res, next) => {
@@ -36,6 +51,11 @@ async function start() {
       serverSelectionTimeoutMS: 5000,
     });
     console.log("MongoDB connecté");
+
+    const User = require("./models/User");
+    const Exam = require("./models/Exam");
+    await User.updateMany({ enrollmentStatus: { $exists: false } }, { $set: { enrollmentStatus: "active" } });
+    await Exam.updateMany({ adminApproved: { $exists: false } }, { $set: { adminApproved: true } });
 
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => console.log(`Serveur lancé sur le port ${PORT}`));

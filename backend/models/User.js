@@ -9,7 +9,12 @@ const userSchema = new mongoose.Schema({
         type: String, 
         enum: ['student', 'professor', 'admin'], 
         default: 'student' 
-    }
+    },
+    enrollmentStatus: {
+        type: String,
+        enum: ['pending', 'active', 'suspended'],
+        default: 'active',
+    },
 }, { timestamps: true });
 
 // Avant de sauvegarder, hasher le mot de passe

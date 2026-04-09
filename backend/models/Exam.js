@@ -34,5 +34,7 @@ const examSchema = new mongoose.Schema(
 
 // Ne jamais envoyer la bonne réponse par défaut (sécurité)
 examSchema.path("questions.correctIndex").select(false);
+examSchema.index({ published: 1, startAt: 1, endAt: 1 });
+examSchema.index({ title: "text", description: "text" });
 
 module.exports = mongoose.model("Exam", examSchema);

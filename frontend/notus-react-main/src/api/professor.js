@@ -44,10 +44,18 @@ export async function publishProfessorExam(examId) {
   return parseJsonOrThrow(res, "Failed to publish exam");
 }
 
-export async function getProfessorExamSubmissions(examId) {
+export async function deleteProfessorExam(examId) {
+  const res = await fetch(`${API_BASE}/api/professor/exams/${examId}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  return parseJsonOrThrow(res, "Failed to delete exam");
+}
+
+export const getExamSubmissions = async (examId) => {
   const res = await fetch(`${API_BASE}/api/professor/exams/${examId}/submissions`, {
     method: "GET",
     headers: authHeaders(),
   });
   return parseJsonOrThrow(res, "Failed to fetch exam submissions");
-}
+};

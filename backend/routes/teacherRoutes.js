@@ -13,7 +13,6 @@ router.put("/exams/:examId", professor.updateExam);
 router.patch("/exams/:examId/publish", professor.publishExam);
 router.get("/exams/:examId/submissions", professor.examSubmissions);
 
-router.post('/register', registerTeacher);  // /api/teachers/register
-router.post('/login', loginTeacher);        // /api/teachers/login
+  
 
 module.exports = router;

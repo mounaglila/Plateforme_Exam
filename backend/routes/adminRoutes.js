@@ -20,7 +20,7 @@ router.delete("/exams/:id", admin.deleteExam);
 
 router.get("/audit-logs", admin.listAuditLogs);
 
-router.get("/announcements", admin.listAnnouncementsAdmin);
+router.get("/announcements", protect, admin.listAnnouncementsAdmin);
 router.post("/announcements", admin.createAnnouncement);
 router.delete("/announcements/:id", admin.deleteAnnouncement);
 

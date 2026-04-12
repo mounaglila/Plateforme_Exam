@@ -381,6 +381,13 @@ exports.createAnnouncement = async (req, res) => {
 
 exports.listAnnouncementsAdmin = async (req, res) => {
   try {
+    const role = req.user?.role; // "student" | "professor" | "admin"
+
+    let allowedAudiences = ["all"];
+    if (role === "student") allowedAudiences.push("students");
+    if (role === "professor") allowedAudiences.push("professors");
+    if (role === "admin") allowedAudiences = ["all", "students", "professors"];
+    
     const list = await Announcement.find()
       .sort({ createdAt: -1 })
       .populate("createdBy", "name email")

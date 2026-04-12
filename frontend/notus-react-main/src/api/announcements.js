@@ -1,8 +1,6 @@
-import { getApiBase, authHeaders, parseJsonOrThrow } from "./auth";
+import axios from "axios";
 
-const API_BASE = getApiBase();
-
-export async function getMyAnnouncements() {
-  const res = await fetch(`${API_BASE}/api/users/announcements`, { headers: authHeaders() });
-  return parseJsonOrThrow(res, "Failed to load announcements");
-}
+export const getMyAnnouncements = async () => {
+  const res = await axios.get("/api/announcements/me"); // adapte l'URL si besoin
+  return res.data;
+};

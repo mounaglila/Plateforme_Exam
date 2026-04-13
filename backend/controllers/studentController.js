@@ -168,7 +168,7 @@ exports.startAttempt = async (req, res) => {
     });
 
     if (attemptsCount >= (exam.maxAttempts || 1)) {
-      return res.status(400).json({ message: "Maximum attempts reached" });
+      return res.status(400).json({ message: "Vous avez atteint le nombre maximal de tentatives." });
     }
 
     draft = await Submission.create({

@@ -207,11 +207,7 @@ export default function StudentDashboard() {
             ? [1, 2].map((i) => <div key={i} className="sd-skeleton" style={{ height: 250 }} />)
             : filteredExams.map((ex) => (
                 <div key={ex._id} className="sd-exam-card">
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 15 }}>
-                    <span style={{ background: "#f1f5f9", padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700 }}>
-                      ID: {ex._id.slice(-5)}
-                    </span>
-                  </div>
+                  
                   <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>{ex.title}</h3>
                   <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>
                     {ex.description || "Évaluation de module."}

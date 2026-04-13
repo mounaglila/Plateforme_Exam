@@ -1,32 +1,29 @@
 const mongoose = require("mongoose");
 
-const questionSchema = new mongoose.Schema(
-  {
-    type: { type: String, enum: ["mcq", "text"], required: true },
-    prompt: { type: String, required: true },
-    options: [{ type: String }],        // pour mcq
-    correctIndex: { type: Number },     // caché côté étudiant via select:false
-    points: { type: Number, default: 1 },
+const examSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: String,
+  durationMinutes: Number,
+  questions: Array,
+
+  pdfUrl: String, // 🔥 AJOUT PDF
+
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
   },
-  { _id: true }
-);
 
-const examSchema = new mongoose.Schema(
-  {
-    title: { type: String, required: true },
-    description: { type: String, default: "" },
-    durationMinutes: { type: Number, default: 30 },
-    published: { type: Boolean, default: false },
-    /** After professor publishes, false until an admin approves (students only see approved exams). */
-    adminApproved: { type: Boolean, default: true },
-    // NEW: planning + rules
-    startAt: { type: Date, default: null },
-    endAt: { type: Date, default: null },
-    maxAttempts: { type: Number, default: 1, min: 1 },
-    showCorrection: { type: Boolean, default: false },
+  published: { type: Boolean, default: false },
+  adminApproved: { type: Boolean, default: false },
 
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  startAt: Date,
+  endAt: Date,
 
+<<<<<<< HEAD
+  maxAttempts: { type: Number, default: 1 },
+  showCorrection: { type: Boolean, default: false },
+}, { timestamps: true });
+=======
     questions: [questionSchema],
   },
   { timestamps: true }
@@ -36,5 +33,6 @@ const examSchema = new mongoose.Schema(
 examSchema.path("questions.correctIndex").select(false);
 examSchema.index({ published: 1, startAt: 1, endAt: 1 });
 examSchema.index({ title: "text", description: "text" });
+>>>>>>> e14d67717872626572ca26f459dc7898e8ed7781
 
 module.exports = mongoose.model("Exam", examSchema);

@@ -1,9 +1,18 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
+
+// ✅ Crée le dossier uploads/ automatiquement s'il n'existe pas
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log('✅ Dossier uploads/ créé');
+}
 
 const allowedOrigins = [
   "http://localhost:3000",
@@ -26,20 +35,22 @@ app.use(express.json());
 
 mongoose.set("bufferCommands", false);
 const teacherRoutes = require('./routes/teacherRoutes');
-
 const userRoutes = require('./routes/userRoutes');
 const studentRoutes = require("./routes/studentRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+
 app.use("/api/student", studentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/professor', teacherRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/uploads", express.static(uploadsDir)); // ✅ chemin absolu
 
 app.get('/', (req, res) => res.send('Backend fonctionne !'));
 app.use((err, req, res, next) => {
-  console.error("GLOBAL ERROR:", err); // stack trace complet
+  console.error("GLOBAL ERROR:", err);
   res.status(500).json({ message: err.message || "Server error" });
 });
+
 mongoose.connection.on("connected", () => console.log("Mongoose connected"));
 mongoose.connection.on("error", (err) => console.log("Mongoose error:", err));
 mongoose.connection.on("disconnected", () => console.log("Mongoose disconnected"));

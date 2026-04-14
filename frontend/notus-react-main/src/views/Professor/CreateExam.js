@@ -1,9 +1,12 @@
 import React, { useState } from "react";
-import { useHistory } from "react-router-dom";
+import { Link, useHistory } from "react-router-dom";
 import { createProfessorExam } from "../../api/professor";
+import { getStoredAuth } from "../../api/auth";
 
 export default function CreateExam() {
   const history = useHistory();
+  const authUser = getStoredAuth().user || {};
+  const displayName = authUser.name || authUser.email || "Enseignant";
 
   // ── type selection ──
   const [examType, setExamType] = useState(null); // null | "qcm" | "pdf"
@@ -132,7 +135,30 @@ export default function CreateExam() {
 
         .ce-root { min-height: 100vh; background: var(--bg); color: var(--text-body); font-family: var(--font-b); font-size: 14px; -webkit-font-smoothing: antialiased; }
         .ce-topbar { height: 3px; background: linear-gradient(90deg, var(--primary) 0%, #818cf8 50%, #38bdf8 100%); }
-        .ce-page { max-width: 820px; margin: 0 auto; padding: 36px 24px 100px; }
+        .ce-layout { display: flex; min-height: calc(100vh - 3px); }
+        .ce-sidebar { width: 260px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 3px; left: 0; height: calc(100vh - 3px); z-index: 10; }
+        .ce-logo { padding: 26px 22px 22px; font-family: var(--font-d); font-size: 22px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+        .ce-logo-mark { width: 34px; height: 34px; background: linear-gradient(135deg, var(--primary) 0%, #818cf8 100%); border-radius: 9px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(99,102,241,0.3); flex-shrink: 0; }
+        .ce-nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px; }
+        .ce-nav-label { font-size: 10px; font-weight: 700; color: var(--light); text-transform: uppercase; letter-spacing: 1px; padding: 10px 12px 6px; }
+        .ce-nav-link { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600; transition: all 0.15s ease; }
+        .ce-nav-link:hover { background: var(--bg); }
+        .ce-nav-link.active { background: var(--primary-light); color: var(--primary); }
+        .ce-nav-link-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: background 0.15s; flex-shrink: 0; }
+        .ce-nav-link:hover .ce-nav-link-icon { background: var(--border); }
+        .ce-nav-link.active .ce-nav-link-icon { background: var(--primary-dim); color: var(--primary); }
+        .ce-profile-zone { padding: 14px 16px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; background: var(--bg); }
+        .ce-avatar { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; letter-spacing: 0.5px; flex-shrink: 0; }
+        .ce-profile-info { flex: 1; min-width: 0; }
+        .ce-profile-name { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ce-profile-role { font-size: 11px; color: var(--muted); margin-top: 1px; }
+        .ce-logout-btn { width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface); color: var(--muted); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.15s ease; }
+        .ce-logout-btn:hover { background: #fef2f2; border-color: #fecaca; color: var(--danger); }
+        .ce-main { flex: 1; margin-left: 260px; }
+        .ce-page { max-width: 920px; margin: 0 auto; padding: 36px 24px 100px; }
+        .ce-hero { display: flex; justify-content: space-between; gap: 18px; align-items: flex-end; margin-bottom: 28px; flex-wrap: wrap; }
+        .ce-hero-copy { max-width: 640px; }
+        .ce-kicker { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 999px; background: var(--primary-light); color: var(--primary); font-size: 12px; font-weight: 700; margin-bottom: 14px; }
 
         .ce-back { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 500; text-decoration: none; margin-bottom: 28px; transition: color .15s; }
         .ce-back:hover { color: var(--text); }
@@ -312,11 +338,67 @@ export default function CreateExam() {
 
         @keyframes spin { to { transform: rotate(360deg); } }
         .ce-spin { animation: spin 0.7s linear infinite; }
+
+        @media (max-width: 1024px) {
+          .ce-sidebar { position: static; width: 100%; height: auto; }
+          .ce-main { margin-left: 0; }
+        }
+
+        @media (max-width: 768px) {
+          .ce-page { padding: 24px 16px 72px; }
+          .ce-hero { align-items: flex-start; }
+        }
       `}</style>
 
       <div className="ce-root">
         <div className="ce-topbar" />
-        <div className="ce-page">
+        <div className="ce-layout">
+          <aside className="ce-sidebar">
+            <div className="ce-logo">
+              <div className="ce-logo-mark">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                </svg>
+              </div>
+              EduSmart
+            </div>
+
+            <nav className="ce-nav">
+              <div className="ce-nav-label">Menu</div>
+              <Link to="/professor/dashboard" className="ce-nav-link">
+                <span className="ce-nav-link-icon">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                </span>
+                Tableau de bord
+              </Link>
+              <Link to="/professor/exams-list" className="ce-nav-link active">
+                <span className="ce-nav-link-icon">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                </span>
+                Mes Examens
+              </Link>
+            </nav>
+
+            <div className="ce-profile-zone">
+              <div className="ce-avatar">
+                {(displayName || "P").split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
+              </div>
+              <div className="ce-profile-info">
+                <p className="ce-profile-name">{displayName}</p>
+                <p className="ce-profile-role">Enseignant</p>
+              </div>
+              <button className="ce-logout-btn" type="button" onClick={() => { localStorage.removeItem("auth"); history.push("/login"); }} title="Se déconnecter">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16 17 21 12 16 7"/>
+                  <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+              </button>
+            </div>
+          </aside>
+
+          <main className="ce-main">
+            <div className="ce-page">
 
           <a href="/professor/dashboard" className="ce-back">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -592,8 +674,9 @@ export default function CreateExam() {
                 </div>
               </>
             )}
-
           </form>
+            </div>
+          </main>
         </div>
       </div>
     </>

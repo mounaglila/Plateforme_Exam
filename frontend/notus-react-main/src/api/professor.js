@@ -50,3 +50,9 @@ export const publishProfessorExam = (id) =>
 // SUBMISSIONS
 export const getExamSubmissions = (id) =>
   axios.get(`${API}/exams/${id}/submissions`, authHeader()).then(res => res.data);
+
+export const getSubmissionForGrading = (examId, submissionId) =>
+  axios.get(`${API}/exams/${examId}/submissions/${submissionId}`, authHeader()).then(res => res.data);
+
+export const gradeSubmission = (examId, submissionId, data) =>
+  axios.patch(`${API}/exams/${examId}/submissions/${submissionId}/grade`, data, authHeader()).then(res => res.data);

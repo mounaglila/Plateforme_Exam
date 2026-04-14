@@ -22,11 +22,10 @@ router.get("/exams/:examId", professor.getMyExamById);
 router.put("/exams/:examId", professor.updateExam);
 router.patch("/exams/:examId/publish", professor.publishExam);
 router.get("/exams/:examId/submissions", professor.examSubmissions);
-<<<<<<< HEAD
+router.get("/exams/:examId/submissions/:submissionId", professor.getSubmissionForGrading);
+router.patch("/exams/:examId/submissions/:submissionId/grade", professor.gradeSubmission);
+
 router.delete("/exams/:examId", professor.deleteExam);
-=======
 
-  
->>>>>>> e14d67717872626572ca26f459dc7898e8ed7781
 
-module.exports = router;
+module.exports = router; 

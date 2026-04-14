@@ -21,11 +21,11 @@ const getUsers = async (req, res) => {
 const registerUser = async (req, res) => {
     const { name, email, password, role } = req.body;
     try {
-        if (role === "admin") {
-            return res.status(403).json({ message: "Admin accounts cannot be created via public registration" });
-        }
+        if (!["student", "professor"].includes(role)) {
+  return res.status(400).json({ message: "Seuls les roles etudiant et professeur sont autorises" });
+}
         const userExists = await User.findOne({ email });
-        if (userExists) return res.status(400).json({ message: 'User already exists' });
+        if (userExists) return res.status(400).json({ message: 'Cet utilisateur existe deja' });
 
         const enrollmentStatus = role === "student" ? "pending" : "active";
 
@@ -65,11 +65,11 @@ const authUser = async (req, res) => {
             const enrollmentStatus = user.enrollmentStatus || "active";
             if (user.role === "student" && enrollmentStatus === "pending") {
                 return res.status(403).json({
-                    message: "Your account is pending administrator approval. You cannot sign in yet.",
+                    message: "Votre compte est en attente de validation par un administrateur. Vous ne pouvez pas encore vous connecter.",
                 });
             }
             if (enrollmentStatus === "suspended") {
-                return res.status(403).json({ message: "Your account has been suspended." });
+                return res.status(403).json({ message: "Votre compte a ete suspendu." });
             }
             await logAudit({
                 actor: user,
@@ -88,7 +88,7 @@ const authUser = async (req, res) => {
                 token: generateToken(user._id),
             });
         } else {
-            res.status(401).json({ message: 'Invalid email or password' });
+            res.status(401).json({ message: 'Email ou mot de passe invalide.' });
         }
     } catch (err) {
         res.status(500).json({ message: err.message });

@@ -81,7 +81,7 @@ exports.listPublishedExams = async (req, res) => {
     const [total, exams] = await Promise.all([
       Exam.countDocuments(filter),
       Exam.find(filter)
-        .select("title description durationMinutes createdAt maxAttempts startAt endAt")
+        .select("title description durationMinutes createdAt maxAttempts startAt endAt type pdfUrl")
         .sort({ [sortField]: sortDir, _id: -1 })
         .skip((p - 1) * l)
         .limit(l),
@@ -112,7 +112,7 @@ exports.getExamForStudent = async (req, res) => {
     const exam = await Exam.findOne({
       _id: req.params.examId,
       ...studentVisibleExamFilter,
-    }).select("title description durationMinutes questions startAt endAt maxAttempts");
+    }).select("title description durationMinutes questions startAt endAt maxAttempts type pdfUrl");
 
     if (!exam) return res.status(404).json({ message: "Exam not found" });
     res.json(exam);
@@ -271,13 +271,9 @@ exports.saveDraft = async (req, res) => {
     }
 
     const validQuestionIds = new Set(exam.questions.map((q) => String(q._id)));
-    for (const a of answers) {
-      if (!a.questionId || !validQuestionIds.has(String(a.questionId))) {
-        return res.status(400).json({ message: `Invalid questionId: ${a.questionId}` });
-      }
-    }
+    const filteredAnswers = answers.filter((a) => a.questionId && validQuestionIds.has(String(a.questionId)));
 
-    draft.answers = answers;
+    draft.answers = filteredAnswers;
     draft.lastSavedAt = new Date();
     await draft.save();
 
@@ -285,6 +281,7 @@ exports.saveDraft = async (req, res) => {
       message: "Draft saved",
       submissionId: draft._id,
       lastSavedAt: draft.lastSavedAt,
+      droppedInvalidAnswers: answers.length - filteredAnswers.length,
     });
   } catch (err) {
     res.status(500).json({ message: err.message || "Could not save draft" });
@@ -341,11 +338,7 @@ exports.submitExam = async (req, res) => {
     const finalAnswers = answers.length ? answers : draft.answers;
 
     const validQuestionIds = new Set(exam.questions.map((q) => String(q._id)));
-    for (const a of finalAnswers) {
-      if (!a.questionId || !validQuestionIds.has(String(a.questionId))) {
-        return res.status(400).json({ message: `Invalid questionId: ${a.questionId}` });
-      }
-    }
+    const sanitizedAnswers = finalAnswers.filter((a) => a.questionId && validQuestionIds.has(String(a.questionId)));
 
     let score = 0;
     let maxScore = 0;
@@ -354,8 +347,9 @@ exports.submitExam = async (req, res) => {
       const points = q.points || 1;
       maxScore += points;
 
-      if (q.type !== "mcq") continue;
-      const a = finalAnswers.find((x) => String(x.questionId) === String(q._id));
+      const isMcq = q.type === "mcq" || q.type === "qcm" || (Array.isArray(q.options) && q.options.length > 0);
+      if (!isMcq) continue;
+      const a = sanitizedAnswers.find((x) => String(x.questionId) === String(q._id));
       if (!a) continue;
 
       if (typeof a.selectedIndex === "number" && a.selectedIndex === q.correctIndex) {
@@ -363,7 +357,7 @@ exports.submitExam = async (req, res) => {
       }
     }
 
-    draft.answers = finalAnswers;
+    draft.answers = sanitizedAnswers;
     draft.status = "submitted";
     draft.score = score;
     draft.maxScore = maxScore;

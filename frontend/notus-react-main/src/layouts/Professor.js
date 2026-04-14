@@ -6,6 +6,7 @@ import ExamsList from "views/Professor/ExamsList";
 import CreateExam from "views/Professor/CreateExam";
 import ExamDetails from "views/Professor/ExamDetails";
 import ExamSubmissions from "views/Professor/ExamSubmissions";
+import GradeSubmission from "views/Professor/GradeSubmission";
 
 export default function Professor() {
   return (
@@ -15,6 +16,7 @@ export default function Professor() {
           <Route path="/professor/dashboard" exact component={ProfessorDashboard} />
           <Route path="/professor/exams-list" exact component={ExamsList} />
           <Route path="/professor/exams/new" exact component={CreateExam} />
+          <Route path="/professor/exams/:id/submissions/:submissionId" exact component={GradeSubmission} />
           <Route path="/professor/exams/:id" exact component={ExamDetails} />
           <Route path="/professor/exams/:id/submissions" exact component={ExamSubmissions} />
           <Redirect from="/professor" to="/professor/dashboard" />

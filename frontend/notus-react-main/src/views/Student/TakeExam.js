@@ -7,6 +7,7 @@ import {
   saveStudentDraft,
   submitStudentExam,
 } from "../../api/student";
+import { getApiBase } from "../../api/auth";
 import StudentShell from "../../components/StudentShell";
 
 export default function TakeExam() {
@@ -169,6 +170,15 @@ export default function TakeExam() {
   if (error) return <StudentShell title="Passage d'examen" error={error} />;
   if (!exam) return <StudentShell title="Passage d'examen"><p>Examen introuvable.</p></StudentShell>;
 
+  const apiBase = getApiBase();
+  const pdfUrl = exam?.pdfUrl
+  ? (String(exam.pdfUrl).startsWith("http") ? exam.pdfUrl : `${apiBase}${exam.pdfUrl}`)
+  : null;
+
+console.log("PDF URL constructed:", pdfUrl);
+console.log("exam.pdfUrl from DB:", exam?.pdfUrl);
+console.log("apiBase:", apiBase);
+
   const rightSlot = (
     <div
       style={{
@@ -196,34 +206,71 @@ export default function TakeExam() {
         {` • Répondu: ${answeredCount}/${exam.questions?.length || 0}`}
       </p>
 
+      {exam.type === "pdf" && pdfUrl && (
+        <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 14, padding: 14, marginBottom: 14 }}>
+          <p style={{ margin: 0, fontWeight: 700, color: "#1e3a8a" }}>Sujet PDF disponible</p>
+          <a
+            href={pdfUrl}
+            download
+            style={{ display: "inline-block", marginTop: 10, fontWeight: 700, color: "#1d4ed8" }}
+          >
+            📥 Télécharger le PDF
+          </a>
+          <p style={{ margin: "10px 0 0", color: "#1d4ed8", fontSize: 13 }}>
+            ou
+          </p>
+          <a
+            href={pdfUrl}
+            target="_blank"
+            rel="noreferrer"
+            style={{ display: "inline-block", marginTop: 6, fontWeight: 700, color: "#1d4ed8" }}
+          >
+            🔗 Ouvrir dans un nouvel onglet
+          </a>
+        </div>
+      )}
+
       {exam.questions?.map((q, i) => (
-        <div
-          key={q._id}
+
+<div
+          key={q._id || q.id || i}
           style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 14, padding: 14, marginBottom: 12 }}
         >
+          {(() => {
+            const qId = q?._id || q?.id || null;
+            return (
+              <>
           <p style={{ fontWeight: 700, marginBottom: 10 }}>
-            Q{i + 1}. {q.prompt}
+            Q{i + 1}. {q.prompt || q.questionText || `Question ${i + 1}`}
           </p>
 
-          {q.type === "mcq" &&
+          {!qId && (
+            <p style={{ marginBottom: 10, color: "#b91c1c", fontSize: 13 }}>
+              Question invalide: identifiant manquant. Contactez l'enseignant pour republier cet examen.
+            </p>
+          )}
+
+          {((q.type === "mcq" || q.type === "qcm") || (Array.isArray(q.options) && q.options.length > 0)) &&
             q.options?.map((op, idx) => (
               <label key={idx} style={{ display: "block", marginBottom: 8, cursor: "pointer" }}>
                 <input
                   type="radio"
-                  name={q._id}
-                  checked={getSelectedIndex(q._id) === idx}
-                  onChange={() => upsertAnswer(q._id, { selectedIndex: Number(idx), textAnswer: "" })}
+                  name={String(qId || `q-${i}`)}
+                  checked={qId ? getSelectedIndex(qId) === idx : false}
+                  onChange={() => qId && upsertAnswer(qId, { selectedIndex: Number(idx), textAnswer: "" })}
+                  disabled={!qId}
                   style={{ marginRight: 8 }}
                 />
                 {op}
               </label>
             ))}
 
-          {q.type === "text" && (
+          {(q.type === "text" || (!q.type && (!Array.isArray(q.options) || q.options.length === 0))) && (
             <textarea
-              value={getTextAnswer(q._id)}
-              onChange={(e) => upsertAnswer(q._id, { textAnswer: e.target.value })}
+              value={qId ? getTextAnswer(qId) : ""}
+              onChange={(e) => qId && upsertAnswer(qId, { textAnswer: e.target.value })}
               placeholder="Écrivez votre réponse..."
+              disabled={!qId}
               style={{
                 width: "100%",
                 minHeight: 110,
@@ -234,6 +281,9 @@ export default function TakeExam() {
               }}
             />
           )}
+              </>
+            );
+          })()}
         </div>
       ))}
 

@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # ====== BACKEND ======
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: edusmart-backend
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGO_URI: ${MONGO_URI}
+      JWT_SECRET: ${JWT_SECRET}
+    volumes:
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      - mongodb
+    networks:
+      - edusmart-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ====== FRONTEND ======
+  frontend:
+    build:
+      context: ./frontend/notus-react-main
+      dockerfile: Dockerfile
+    container_name: edusmart-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_API_BASE: http://localhost:5000
+    depends_on:
+      - backend
+    networks:
+      - edusmart-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ====== MONGODB (OPTIONNEL - si tu veux une BD locale) ======
+  mongodb:
+    image: mongo:6.0-alpine
+    container_name: edusmart-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-examuser}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-exampass123}
+      MONGO_INITDB_DATABASE: edusmart
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - edusmart-network
+    restart: unless-stopped
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+networks:
+  edusmart-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  mongodb_config:

@@ -1,13 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useHistory } from "react-router-dom";
 import { getMyProfessorExams, publishProfessorExam, deleteProfessorExam } from "../../api/professor";
 import { getStoredAuth } from "../../api/auth";
 
-/* ─── Utilitaire de date ─── */
-const fmt = (d) =>
-  d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
-
 export default function ExamsList() {
+  const history = useHistory();
   const [exams, setExams] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -15,6 +12,11 @@ export default function ExamsList() {
   const [searchTerm, setSearchTerm] = useState("");
   const authUser = getStoredAuth().user || {};
   const displayName = authUser.name || authUser.email || "Enseignant";
+
+  const logout = () => {
+    localStorage.removeItem("auth");
+    history.push("/login");
+  };
 
   const load = async () => {
     try {
@@ -94,34 +96,69 @@ export default function ExamsList() {
         }
 
         .el-logo {
-          padding: 30px;
+          padding: 26px 22px 22px;
           font-family: var(--font-display);
-          font-size: 24px;
+          font-size: 22px;
           font-weight: 800;
           color: var(--primary);
-          display: flex; align-items: center; gap: 10px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          border-bottom: 1px solid var(--border);
+        }
+        .el-logo-mark {
+          width: 34px;
+          height: 34px;
+          background: linear-gradient(135deg, var(--primary) 0%, #818cf8 100%);
+          border-radius: 9px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 10px rgba(99,102,241,0.3);
+          flex-shrink: 0;
         }
 
-        .el-nav { flex: 1; padding: 10px 20px; }
+        .el-nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px; }
+        .el-nav-label { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; padding: 10px 12px 6px; }
         .el-nav-link {
-          display: flex; align-items: center; gap: 12px;
-          padding: 12px 15px; border-radius: 12px;
-          color: var(--text-muted); text-decoration: none;
-          font-weight: 600; transition: 0.2s; margin-bottom: 5px;
+          display: flex; align-items: center; gap: 10px;
+          padding: 10px 12px; border-radius: 10px;
+          color: var(--text-main); text-decoration: none;
+          font-size: 14px; font-weight: 600; transition: all 0.15s ease;
         }
-        .el-nav-link:hover, .el-nav-link.active {
-          background: #f1f5f9; color: var(--text-main);
-        }
+        .el-nav-link:hover { background: #f8fafc; }
         .el-nav-link.active { background: #eef2ff; color: var(--primary); }
+        .el-nav-link-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: background 0.15s; flex-shrink: 0; }
+        .el-nav-link:hover .el-nav-link-icon { background: var(--border); }
+        .el-nav-link.active .el-nav-link-icon { background: rgba(99,102,241,0.10); color: var(--primary); }
 
         .el-profile-zone {
-          padding: 20px; border-top: 1px solid var(--border);
+          padding: 14px 16px; border-top: 1px solid var(--border);
           display: flex; align-items: center; gap: 12px;
+          background: #f8fafc;
         }
         .el-avatar {
-          width: 40px; height: 40px; border-radius: 10px;
-          background: var(--text-main);
-          color: white; display: flex; align-items: center; justify-content: center; font-weight: 700;
+          width: 36px; height: 36px; border-radius: 10px;
+          background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+          color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px;
+        }
+        .el-profile-info { flex: 1; min-width: 0; }
+        .el-profile-name { font-size: 13px; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .el-profile-role { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+        .el-logout-btn {
+          width: 32px; height: 32px;
+          border-radius: 8px;
+          border: 1.5px solid var(--border);
+          background: var(--surface);
+          color: var(--text-muted);
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer; flex-shrink: 0;
+          transition: all 0.15s ease;
+        }
+        .el-logout-btn:hover {
+          background: #fef2f2;
+          border-color: #fecaca;
+          color: var(--danger);
         }
 
         /* ── MAIN CONTENT ── */
@@ -161,6 +198,7 @@ export default function ExamsList() {
           display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px;
           border-radius: 10px; font-size: 11px; font-weight: 700; margin-bottom: 15px;
         }
+        .el-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
         .el-badge--pub { background: #ecfdf5; color: var(--success); }
         .el-badge--draft { background: #fffbeb; color: var(--warning); }
 
@@ -171,6 +209,7 @@ export default function ExamsList() {
         }
         .el-btn--edit { background: #f1f5f9; color: var(--text-main); }
         .el-btn--pub { background: var(--primary); color: white; }
+        .el-btn--pub:disabled { opacity: 0.55; cursor: not-allowed; }
         .el-btn--del { background: #fee2e2; color: var(--danger); flex: 0.5; }
         .el-btn--del:hover { background: var(--danger); color: white; }
 
@@ -189,17 +228,26 @@ export default function ExamsList() {
         {/* SIDEBAR */}
         <aside className="el-sidebar">
           <div className="el-logo">
-            <div style={{width:32, height:32, background:'var(--primary)', borderRadius:8}}></div>
+            <div className="el-logo-mark">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+              </svg>
+            </div>
             EduSmart
           </div>
           
           <nav className="el-nav">
-            <Link to="/professor" className="el-nav-link">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <div className="el-nav-label">Menu</div>
+            <Link to="/professor/dashboard" className="el-nav-link">
+              <span className="el-nav-link-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+              </span>
               Tableau de bord
             </Link>
-            <Link to="/professor" className="el-nav-link active">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            <Link to="/professor/exams-list" className="el-nav-link active">
+              <span className="el-nav-link-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              </span>
               Mes Examens
             </Link>
           </nav>
@@ -213,10 +261,17 @@ export default function ExamsList() {
                 .slice(0, 2)
                 .toUpperCase()}
             </div>
-            <div>
-              <p style={{fontSize:14, fontWeight:700, color:'var(--text-main)'}}>{displayName}</p>
-              <p style={{fontSize:12, color:'var(--text-muted)'}}>Enseignant</p>
+            <div className="el-profile-info">
+              <p className="el-profile-name">{displayName}</p>
+              <p className="el-profile-role">Enseignant</p>
             </div>
+            <button className="el-logout-btn" onClick={logout} title="Se déconnecter">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </button>
           </div>
         </aside>
 
@@ -268,10 +323,14 @@ export default function ExamsList() {
               <div key={ex._id} className="el-card">
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
                   <span className={`el-badge ${ex.published ? 'el-badge--pub' : 'el-badge--draft'}`}>
-                    {ex.published ? '● Publié' : '● Brouillon'}
+                    <span className="el-badge-dot" />
+                    {ex.published ? 'Publié' : 'Brouillon'}
                   </span>
                   {ex.published && ex.adminApproved === false && (
-                    <span className="el-badge el-badge--draft">● En attente validation</span>
+                    <span className="el-badge el-badge--draft">
+                      <span className="el-badge-dot" />
+                      En attente validation
+                    </span>
                   )}
                 </div>
                 
@@ -293,7 +352,16 @@ export default function ExamsList() {
 
                 <div className="el-actions">
                   <Link to={`/professor/exams/${ex._id}`} className="el-btn el-btn--edit">Modifier</Link>
-                  <Link to={`/professor/exams/${ex._id}/submissions`} className="el-btn el-btn--edit" style={{flex:0.5}}>📊</Link>
+                  <Link to={`/professor/exams/${ex._id}/submissions`} className="el-btn" style={{background: "#10b981", color: "white", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 6}}>📊 Soumissions</Link>
+                  {!ex.published && (
+                    <button
+                      onClick={() => onPublish(ex._id)}
+                      disabled={publishingId === ex._id}
+                      className="el-btn el-btn--pub"
+                    >
+                      {publishingId === ex._id ? "..." : "Publier"}
+                    </button>
+                  )}
                   <button 
                     onClick={() => onDelete(ex._id)}
                     className="el-btn el-btn--del"

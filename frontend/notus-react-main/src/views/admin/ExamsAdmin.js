@@ -74,7 +74,8 @@ export default function ExamsAdmin() {
               </thead>
               <tbody>
                 {exams.map((ex) => {
-                  const needsApproval = ex.published && ex.adminApproved === false;
+                  const visibleToStudents = ex.published && ex.adminApproved;
+                  const needsPublishing = !visibleToStudents;
                   return (
                     <tr key={ex._id}>
                       <td style={{ fontWeight: 600 }}>{ex.title}</td>
@@ -82,18 +83,16 @@ export default function ExamsAdmin() {
                         {ex.createdBy?.name || ex.createdBy?.email || "—"}
                       </td>
                       <td>
-                        {!ex.published && <span className="ad-badge ad-badge-muted">Brouillon</span>}
+                        {!ex.published && !ex.adminApproved && <span className="ad-badge ad-badge-muted">Brouillon</span>}
                         {ex.published && ex.adminApproved && <span className="ad-badge ad-badge-success">Visible étudiants</span>}
-                        {needsApproval && <span className="ad-badge ad-badge-warn">En attente approbation</span>}
-                        {ex.published && ex.adminApproved === false && !needsApproval && (
-                          <span className="ad-badge ad-badge-warn">Non approuvé</span>
-                        )}
+                        {!ex.published && ex.adminApproved && <span className="ad-badge ad-badge-warn">Approuvé, non publié</span>}
+                        {ex.published && !ex.adminApproved && <span className="ad-badge ad-badge-warn">En attente approbation</span>}
                       </td>
                       <td>
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          {needsApproval && (
+                          {needsPublishing && (
                             <button type="button" className="ad-btn ad-btn-primary ad-btn-sm" onClick={() => onApprove(ex._id)}>
-                              Approuver
+                              Publier
                             </button>
                           )}
                           {ex.published && (

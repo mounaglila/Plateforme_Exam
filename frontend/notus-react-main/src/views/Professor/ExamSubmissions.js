@@ -249,17 +249,13 @@ export default function ExamSubmissions() {
           </div>
           
           <nav className="es-nav">
-            <Link to="/professor" className="es-nav-link">
+            <Link to="/professor/dashboard" className="es-nav-link">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
               Tableau de bord
             </Link>
-            <Link to="/professor/exams" className="es-nav-link">
+            <Link to="/professor/exams-list" className="es-nav-link">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-              Mes Cours
-            </Link>
-            <Link to="/professor/results" className="es-nav-link">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
-              Analyses
+              Mes Examens
             </Link>
           </nav>
 
@@ -338,6 +334,7 @@ export default function ExamSubmissions() {
                         <th>Email</th>
                         <th>Date de soumission</th>
                         <th>Score</th>
+                        <th>Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -352,6 +349,18 @@ export default function ExamSubmissions() {
                             ) : (
                               <span style={{color:'var(--text-muted)'}}>—</span>
                             )}
+                          </td>
+                          <td>
+                            <Link
+                              to={`/professor/exams/${examId}/submissions/${s._id}`}
+                              style={{
+                                textDecoration: "none",
+                                fontWeight: 700,
+                                color: "var(--primary)",
+                              }}
+                            >
+                              Corriger
+                            </Link>
                           </td>
                         </tr>
                       ))}

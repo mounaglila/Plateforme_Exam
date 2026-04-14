@@ -1,7 +1,6 @@
 // ================= API BASE =================
 const API_BASE =
-  process.env.REACT_APP_API_BASE ||
-  (process.env.NODE_ENV === "development" ? "" : "http://localhost:5000");
+  process.env.REACT_APP_API_BASE || "http://localhost:5000";
 
 // ================= AUTH API =================
 export async function loginApi({ email, password }) {

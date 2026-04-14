@@ -28,13 +28,15 @@ exports.createExam = async (req, res) => {
     maxAttempts,
     showCorrection,
     published,
+    type,
   } = req.body;
 
   if (!title)
     return res.status(400).json({ message: "title is required" });
 
   // PDF file (optional)
-  const pdfFile = req.file ? req.file.filename : null;
+  const pdfFile = req.file ? `/uploads/${req.file.filename}` : null;
+  const normalizedType = type === "pdf" ? "pdf" : "qcm";
 
   if (startAt && endAt && new Date(startAt) >= new Date(endAt)) {
     return res
@@ -42,18 +44,26 @@ exports.createExam = async (req, res) => {
       .json({ message: "startAt must be before endAt" });
   }
 
+  const normalizedQuestions = Array.isArray(questions) ? questions : [];
+  const fallbackPdfQuestion = {
+    type: "text",
+    prompt: "Rédigez votre réponse à l'examen PDF.",
+    points: 20,
+  };
+
   const exam = await Exam.create({
     title,
     description: description || "",
     durationMinutes: durationMinutes || 30,
-    questions: Array.isArray(questions) ? questions : [],
+    type: normalizedType,
+    questions: normalizedType === "pdf" ? (normalizedQuestions.length ? normalizedQuestions : [fallbackPdfQuestion]) : normalizedQuestions,
     createdBy: req.user._id,
     published: Boolean(published) || false,
     startAt: startAt ? new Date(startAt) : null,
     endAt: endAt ? new Date(endAt) : null,
     maxAttempts: Number(maxAttempts) > 0 ? Number(maxAttempts) : 1,
     showCorrection: Boolean(showCorrection),
-    pdf: pdfFile, // 👈 IMPORTANT
+    pdfUrl: pdfFile,
   });
 
   await logAudit({
@@ -155,11 +165,123 @@ exports.examSubmissions = async (req, res) => {
   const guard = ensureProfessor(req, res);
   if (guard) return;
 
+  const exam = await Exam.findOne({
+    _id: req.params.examId,
+    createdBy: req.user._id,
+  });
+
+  if (!exam)
+    return res.status(404).json({ message: "Exam not found" });
+
   const subs = await Submission.find({
     exam: req.params.examId,
   }).populate("student", "name email");
 
   res.json(subs);
+};
+
+exports.getSubmissionForGrading = async (req, res) => {
+  const guard = ensureProfessor(req, res);
+  if (guard) return;
+
+  const exam = await Exam.findOne({
+    _id: req.params.examId,
+    createdBy: req.user._id,
+  }).select("title type pdfUrl questions");
+
+  if (!exam)
+    return res.status(404).json({ message: "Exam not found" });
+
+  const submission = await Submission.findOne({
+    _id: req.params.submissionId,
+    exam: req.params.examId,
+  }).populate("student", "name email");
+
+  if (!submission)
+    return res.status(404).json({ message: "Submission not found" });
+
+  res.json({ exam, submission });
+};
+
+exports.gradeSubmission = async (req, res) => {
+  const guard = ensureProfessor(req, res);
+  if (guard) return;
+
+  const { grades = [] } = req.body || {};
+
+  const exam = await Exam.findOne({
+    _id: req.params.examId,
+    createdBy: req.user._id,
+  }).select("title questions");
+
+  if (!exam)
+    return res.status(404).json({ message: "Exam not found" });
+
+  const submission = await Submission.findOne({
+    _id: req.params.submissionId,
+    exam: req.params.examId,
+  });
+
+  if (!submission)
+    return res.status(404).json({ message: "Submission not found" });
+
+  const gradeByQuestionId = new Map(
+    (Array.isArray(grades) ? grades : []).map((g) => [String(g.questionId), g])
+  );
+
+  let score = 0;
+  let maxScore = 0;
+
+  for (const q of exam.questions || []) {
+    const qId = String(q._id);
+    const points = Number(q.points || 1);
+    maxScore += points;
+
+    const answer = submission.answers.find((a) => String(a.questionId) === qId);
+    const gradeInput = gradeByQuestionId.get(qId) || {};
+
+    const isMcq = q.type === "mcq" || q.type === "qcm" || (Array.isArray(q.options) && q.options.length > 0);
+    if (isMcq) {
+      const isCorrect = answer && typeof answer.selectedIndex === "number" && answer.selectedIndex === q.correctIndex;
+      if (isCorrect) score += points;
+      if (answer) {
+        answer.awardedPoints = isCorrect ? points : 0;
+        if (typeof gradeInput.correctionComment === "string") {
+          answer.correctionComment = gradeInput.correctionComment;
+        }
+      }
+      continue;
+    }
+
+    const rawPoints = Number(gradeInput.awardedPoints || 0);
+    const bounded = Math.max(0, Math.min(points, rawPoints));
+    score += bounded;
+
+    if (answer) {
+      answer.awardedPoints = bounded;
+      answer.correctionComment = typeof gradeInput.correctionComment === "string" ? gradeInput.correctionComment : answer.correctionComment || "";
+    }
+  }
+
+  submission.score = score;
+  submission.maxScore = maxScore;
+  submission.status = "graded";
+  await submission.save();
+
+  await logAudit({
+    actor: req.user,
+    action: "submission.grade",
+    entityType: "submission",
+    entityId: submission._id,
+    meta: {
+      examId: String(exam._id),
+      score,
+      maxScore,
+    },
+    req,
+  });
+
+  res.json(submission);
 };
 
 // ================= DELETE =================

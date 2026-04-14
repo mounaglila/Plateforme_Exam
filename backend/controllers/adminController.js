@@ -71,10 +71,10 @@ exports.createUser = async (req, res) => {
   try {
     const { name, email, password, role, enrollmentStatus } = req.body || {};
     if (!email || !password) {
-      return res.status(400).json({ message: "email and password are required" });
+      return res.status(400).json({ message: "email et mot de passe sont requis." });
     }
     if (!role || !["student", "professor", "admin"].includes(role)) {
-      return res.status(400).json({ message: "role must be student, professor, or admin" });
+      return res.status(400).json({ message: "Le role doit etre etudiant, professeur ou administrateur" });
     }
     const exists = await User.findOne({ email });
     if (exists) return res.status(400).json({ message: "Email already in use" });
@@ -136,7 +136,7 @@ exports.updateUser = async (req, res) => {
 
     if (role !== undefined) {
       if (!["student", "professor", "admin"].includes(role)) {
-        return res.status(400).json({ message: "Invalid role" });
+        return res.status(400).json({ message: "Role invalide" });
       }
       if (String(user._id) === String(req.user._id) && user.role === "admin" && role !== "admin") {
         const admins = await User.countDocuments({ role: "admin" });
@@ -231,6 +231,7 @@ exports.approveExam = async (req, res) => {
   try {
     const exam = await Exam.findById(req.params.id);
     if (!exam) return res.status(404).json({ message: "Exam not found" });
+    exam.published = true;
     exam.adminApproved = true;
     await exam.save();
 
@@ -243,7 +244,7 @@ exports.approveExam = async (req, res) => {
       req,
     });
 
-    res.json({ message: "Exam approved for students", exam });
+    res.json({ message: "Exam published and approved for students", exam });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

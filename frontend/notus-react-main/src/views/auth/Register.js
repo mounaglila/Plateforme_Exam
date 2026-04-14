@@ -229,11 +229,7 @@ const ROLES = [
     label: "Professeur",
     emoji: "📚",
   },
-  {
-    value: "admin",
-    label: "Admin",
-    emoji: "⚙️",
-  },
+  
 ];
 
 export default function Register() {
@@ -265,8 +261,7 @@ export default function Register() {
             },
           })
         );
-        if (data.role === "admin") history.push("/admin/dashboard");
-        else if (data.role === "professor") history.push("/professor/dashboard");
+        if (data.role === "professor") history.push("/professor/dashboard");
         else history.push("/student/dashboard");
       } else {
         history.push("/auth/login", {

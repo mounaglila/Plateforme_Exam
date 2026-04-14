@@ -1,8 +1,9 @@
 import axios from "axios";
 import { getToken } from "./auth";
+import API_BASE from "./config";  // importe le fichier central
 
-const API = "http://localhost:5000/api/professor";
-
+// Plus de "http://localhost:5000" hardcodé ici
+const API = `${API_BASE}/api/professor`;
 const authHeader = () => ({
   headers: { Authorization: `Bearer ${getToken()}` },
 });

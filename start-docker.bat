@@ -26,19 +26,19 @@ if not exist .env (
 )
 
 echo 📦 Démarrage des conteneurs...
-docker-compose up -d
+docker compose up -d
 
 echo.
 echo ✅ Conteneurs démarrés!
 echo.
 echo 🌐 Accède à:
-echo    Frontend:   http://localhost:3000
-echo    Backend API: http://localhost:5000
-echo    MongoDB:    mongodb://localhost:27017
+echo    Application (Nginx + React): http://localhost
+echo    API directe (optionnel):       http://localhost:5000
+echo    MongoDB: configurer MONGO_URI dans le fichier .env
 echo.
 echo 📋 Commandes utiles:
-echo    Voir les logs:    docker-compose logs -f
-echo    Arrêter:          docker-compose down
-echo    Redémarrer:       docker-compose restart
+echo    Voir les logs:    docker compose logs -f
+echo    Arrêter:          docker compose down
+echo    Redémarrer:       docker compose restart
 echo.
 pause

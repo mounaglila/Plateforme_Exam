@@ -175,10 +175,6 @@ export default function TakeExam() {
   ? (String(exam.pdfUrl).startsWith("http") ? exam.pdfUrl : `${apiBase}${exam.pdfUrl}`)
   : null;
 
-console.log("PDF URL constructed:", pdfUrl);
-console.log("exam.pdfUrl from DB:", exam?.pdfUrl);
-console.log("apiBase:", apiBase);
-
   const rightSlot = (
     <div
       style={{

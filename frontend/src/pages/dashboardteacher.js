@@ -1,37 +1,34 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
+
+import { getToken } from "../api/auth";    // ← token centralisé
+import API_BASE from "../api/config";      // ← URL centralisée
+
 
 const Dashboard = () => {
   const [exams, setExams] = useState([]);
 
-  const token = localStorage.getItem("token");
+  const authHeader = () => ({
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
 
   // récupérer les examens
-  const fetchExams = async () => {
-    try {
-      const res = await axios.get("http://localhost:5000/api/exams", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setExams(res.data);
-    } catch (err) {
-      console.log(err);
-    }
-  };
+  const fetchExams = useCallback(async () => {
+  try {
+    const res = await axios.get(`${API_BASE}/api/exams`, authHeader());
+    setExams(res.data);
+  } catch (err) {
+    console.log(err);
+  }
+}, []);
 
   useEffect(() => {
-    fetchExams();
-  }, []);
-
+  fetchExams();
+}, [fetchExams]);
   // supprimer un examen
   const deleteExam = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/exams/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await axios.delete(`${API_BASE}/api/exams/${id}`, authHeader());
       fetchExams(); // refresh
     } catch (err) {
       console.log(err);

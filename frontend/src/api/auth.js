@@ -1,6 +1,5 @@
 // ================= API BASE =================
-const API_BASE =
-  process.env.REACT_APP_API_BASE || "http://localhost:5000";
+import API_BASE from "./config";  
 
 // ================= AUTH API =================
 export async function loginApi({ email, password }) {

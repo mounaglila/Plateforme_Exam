@@ -54,4 +54,4 @@ The application follows a client-server architecture:
 
 ### Clone the repository
 ```bash
-git clone 
+git clone https://github.com/mounaglila/Plateforme_Exam.git
